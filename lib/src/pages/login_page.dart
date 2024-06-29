@@ -260,9 +260,48 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             const SizedBox(height: 5),
                             IconButton(
-                              onPressed: () {}, //TODO:Implement
+                              onPressed: () async {
+                                try {
+                                  UserCredential credentials =
+                                      await ThirdPartyAuthenticators()
+                                          .signInWithApple();
+
+                                  if (credentials.user != null) {
+                                    Navigator.popAndPushNamed(context, "/home");
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text("Something went wrong"),
+                                      ),
+                                    );
+                                  }
+                                } on FirebaseAuthException catch (e) {
+                                  if (e.code ==
+                                      'account-exists-with-different-credential') {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            "An account already exists with the same email address but different sign-in credentials. Sign in using a provider associated with this email address."),
+                                      ),
+                                    );
+                                  } else if (e.code == 'invalid-credential') {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            "The credential used to authenticate the AdminUser is malformed or has expired. Please try again."),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  logger.e(e.toString());
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content:
+                                              Text("Something went wrong")));
+                                }
+                              }, //TODO:Implement
                               icon: Image.asset(
-                                "assets/icons/facebook_icon.png",
+                                "assets/icons/apple-logo.png",
                                 height: 40,
                               ),
                             ),
