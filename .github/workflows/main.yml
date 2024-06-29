@@ -1,0 +1,51 @@
+name: Firebase App Distribution
+
+on:
+  pull_request:
+    branches:
+      - main
+
+  push:
+    branches:
+      - main # Trigger on main branch push
+      - dev
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.23.0-13.0.pre.277"
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Android release
+        run: flutter build apk --release
+
+      - name: Build iOS release
+        run: flutter build ios --release --no-codesign
+
+      - name: Build web
+        run: flutter build web
+
+      - name: Distribute to Firebase App Distribution
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          firebase appdistribution:distribute ./build/app/outputs/flutter-apk/app-release.apk --app ${{secrets.ANDROID_APP_ID}}
+          firebase appdistribution:distribute ./build/ios/iphoneos/Runner.app --app ${{secrets.IOS_APP_ID }}
+          firebase appdistribution:distribute ./build/web --app ${{secrets.WEB_APP_ID}}
